@@ -4,4 +4,4 @@
 *.jpg
 *.png
 *Graph/
-
+./Melanoma/.ipynb_checkpoints/
