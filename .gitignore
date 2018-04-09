@@ -1,0 +1,7 @@
+*data/
+*.hdf5
+*.npy
+*.jpg
+*.png
+*Graph/
+
