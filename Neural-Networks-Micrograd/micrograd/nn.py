@@ -17,9 +17,9 @@ class Neuron(Module):
 
     def __call__(self, x):
         activation = sum((wi*xi for wi, xi in zip(self.w, x)), self.b)
-        if self.activation == 'tanh'
+        if self.activation == 'tanh':
             output = activation.tanh()
-        elif self.activation == 'relu'L
+        elif self.activation == 'relu':
             output = activation.relu()
         else:
             raise ValueError(f"Unexpected activation value: {self.activation}")
