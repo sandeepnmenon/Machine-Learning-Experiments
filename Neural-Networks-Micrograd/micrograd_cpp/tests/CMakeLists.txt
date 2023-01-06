@@ -1,0 +1,2 @@
+add_executable(variable_test variable_test.cpp)
+target_link_libraries(variable_test micrograd_cpp)
