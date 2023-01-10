@@ -80,6 +80,7 @@ namespace micrograd_cpp
 
         void set_label(string label) { this->_label = label; }
         float data() const { return _data; }
+        void set_data(float data) { this->_data = data; }
 
         
         Variable(float data, vector<VariablePtr> _children = vector<VariablePtr>(), string op = "", string label = "")
