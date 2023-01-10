@@ -78,7 +78,7 @@ namespace micrograd_cpp
         float grad;
         function<void()> _backward;
 
-        void label(string label) { this->_label = label; }
+        void set_label(string label) { this->_label = label; }
         float data() const { return _data; }
 
         
@@ -91,7 +91,7 @@ namespace micrograd_cpp
             this->_label = label;
             this->_backward = []() {};
         }
-        
+
         // function to print label when printing the object using cout
         friend ostream &operator<<(ostream &os, const Variable &v)
         {
