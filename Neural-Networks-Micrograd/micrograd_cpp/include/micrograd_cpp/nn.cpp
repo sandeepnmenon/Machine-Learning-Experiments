@@ -33,7 +33,7 @@ namespace micrograd_cpp
         }
     };
 
-    class Neuron
+    class Neuron: Module
     {
         vector<VariablePtr> _weights;
         VariablePtr _bias;
@@ -107,7 +107,7 @@ namespace micrograd_cpp
 
     };
 
-    class Layer
+    class Layer: Module
     {
         unsigned int nin;
         unsigned int nout;
@@ -157,7 +157,7 @@ namespace micrograd_cpp
         }
     };
 
-    class MLP
+    class MLP: Module
     {
         unsigned int nin;
         vector<unsigned int> nouts;
