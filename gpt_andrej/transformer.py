@@ -85,7 +85,7 @@ class Head(nn.Module):
 
         affinity = q @ k.transpose(-2, -1) / V**0.5  # B,T,T
         affinity = affinity.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
-        affinity = F.softmax(affinity, dim=1)
+        affinity = F.softmax(affinity, dim=-1)
         affinity = self.dropout(affinity)
 
         # weighted aggregation of values
@@ -180,6 +180,7 @@ class BigramLanguageModel(nn.Module):
         return idx
  
 model = BigramLanguageModel().to(device)
+print(sum(p.numel() for p in m.parameters())/1e6, 'M parameters')
 
 # Train
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
@@ -202,8 +203,11 @@ for epoch in range(epochs):
     optimizer.step()
 
 
+# Save model
+torch.save(model, 'gpt_shapespeare.pt')
+
 # Generate text
 context = torch.zeros((1,1), dtype=torch.long).to(device)
-generated_output = model.generate(context, max_new_tokens = 500)
+generated_output = model.generate(context, max_new_tokens = 2000)
 print("Generated text:")
 print(decode(generated_output[0].cpu().numpy()))
