@@ -31,7 +31,7 @@ print('Vocabulary size:', vocab_size)
 # Create encoder and decoder
 char_to_idx = {ch:i for i,ch in enumerate(vocab)}
 idx_to_char = {i:ch for i,ch in enumerate(vocab)}
-encode = lambda x: np.array([char_to_idx[ch] for ch in x])
+encode = lambda x: [char_to_idx[ch] for ch in x]
 decode = lambda x: ''.join([idx_to_char[idx] for idx in x])
 
 # Train and test splits
@@ -180,7 +180,7 @@ class BigramLanguageModel(nn.Module):
         return idx
  
 model = BigramLanguageModel().to(device)
-print(sum(p.numel() for p in m.parameters())/1e6, 'M parameters')
+print(sum(p.numel() for p in model.parameters())/1e6, 'M parameters')
 
 # Train
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
