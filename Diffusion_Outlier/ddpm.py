@@ -1,14 +1,16 @@
-import os
 import copy
-import torch
+import logging
+import os
+
 import numpy as np
+import torch
 import torch.nn as nn
 from torch import optim
-from tqdm import tqdm
-import logging
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
-from modules import UNet_conditional as UNet, EMA
+from modules import EMA
+from modules import UNet_conditional as UNet
 from utils import get_data, save_images, setup_logging
 
 logging.basicConfig(
@@ -80,7 +82,7 @@ def train(args):
     mse = nn.MSELoss()
     diffusion = Diffusion(img_size=args.image_size, device=device)
     logger = SummaryWriter(os.path.join('runs', args.run_name))
-    l = len(dataloader)
+    data_len = len(dataloader)
     ema = EMA(beta=0.995)
     ema_model = copy.deepcopy(model.eval().requires_grad_(False))
     
@@ -103,7 +105,7 @@ def train(args):
             ema.step_ema(ema_model, model)
             
             pbar.set_postfix(MSE=loss.item())
-            logger.add_scalar('MSE', loss.item(), global_step=epoch*l + i)
+            logger.add_scalar('MSE', loss.item(), global_step=epoch*data_len + i)
         
          
         if epoch % 10 == 0:
