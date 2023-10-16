@@ -1,4 +1,5 @@
 import os
+import copy
 import torch
 import numpy as np
 import torch.nn as nn
@@ -8,7 +9,7 @@ from tqdm import tqdm
 import logging
 from torch.utils.tensorboard import SummaryWriter
 
-from modules import UNet_conditional as UNet
+from modules import UNet_conditional as UNet, EMA
 from utils import get_data, plot_images, save_images, setup_logging
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s: %(message)s', level=logging.INFO, datefmt='%I:%M:%S')
@@ -77,6 +78,8 @@ def train(args):
     diffusion = Diffusion(img_size=args.image_size, device=device)
     logger = SummaryWriter(os.path.join('runs', args.run_name))
     l = len(dataloader)
+    ema = EMA(beta=0.995)
+    ema_model = copy.deepcopy(model.eval().requires_grad_(False))
     
     for epoch in range(args.epochs):
         logging.info(f'Epoch {epoch+1}/{args.epochs}')
@@ -94,13 +97,20 @@ def train(args):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            ema.step_ema(ema_model, model)
             
             pbar.set_postfix(MSE=loss.item())
             logger.add_scalar('MSE', loss.item(), global_step=epoch*l + i)
-            
-        sampled_images = diffusion.sample(model, n = images.shape[0])
-        save_images(sampled_images, os.path.join('results', args.run_name, f'{epoch+1}.png'), nrow=8)
-        torch.save(model.state_dict(), os.path.join('models', args.run_name, f'ckpt_{epoch+1}.pt'))
+        
+         
+        if epoch % 10 == 0:
+            labels = torch.arange(args.num_classes).long().to(device)
+            sampled_images = diffusion.sample(model, n = images.shape[0], labels=labels)
+            ema_sampled_images = diffusion.sample(ema_model, n = images.shape[0], labels=labels)
+            save_images(sampled_images, os.path.join('results', args.run_name, f'{epoch+1}.png'), nrow=8)
+            save_images(ema_sampled_images, os.path.join('results', args.run_name, f'ema_{epoch+1}.png'), nrow=8)
+            torch.save(model.state_dict(), os.path.join('models', args.run_name, f'ckpt_{epoch+1}.pt'))
+            torch.save(ema_model.state_dict(), os.path.join('models', args.run_name, f'ema_ckpt_{epoch+1}.pt'))
         
 def launch():
     import argparse
