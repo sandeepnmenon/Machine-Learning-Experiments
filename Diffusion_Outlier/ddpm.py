@@ -3,16 +3,19 @@ import copy
 import torch
 import numpy as np
 import torch.nn as nn
-from matplotlib import pyplot as plt
 from torch import optim
 from tqdm import tqdm
 import logging
 from torch.utils.tensorboard import SummaryWriter
 
 from modules import UNet_conditional as UNet, EMA
-from utils import get_data, plot_images, save_images, setup_logging
+from utils import get_data, save_images, setup_logging
 
-logging.basicConfig(format='%(asctime)s - %(levelname)s: %(message)s', level=logging.INFO, datefmt='%I:%M:%S')
+logging.basicConfig(
+    format='%(asctime)s - %(levelname)s: %(message)s', 
+    level=logging.INFO, 
+    datefmt='%I:%M:%S'
+)
 
 class Diffusion:
     def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.01, img_size=64, device='cuda') -> None:
