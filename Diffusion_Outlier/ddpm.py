@@ -1,5 +1,6 @@
 import os
 import torch
+import numpy as np
 import torch.nn as nn
 from matplotlib import pyplot as plt
 from torch import optim
@@ -7,7 +8,7 @@ from tqdm import tqdm
 import logging
 from torch.utils.tensorboard import SummaryWriter
 
-from modules import UNet
+from modules import UNet_conditional as UNet
 from utils import get_data, plot_images, save_images, setup_logging
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s: %(message)s', level=logging.INFO, datefmt='%I:%M:%S')
@@ -36,14 +37,18 @@ class Diffusion:
     def sample_timesteps(self, n):
         return torch.randint(0, self.noise_steps, (n,), device=self.device)
     
-    def sample(self, model, n):
+    def sample(self, model, n, labels, cgf_scale=3):
         logging.info(f'Sampling {n} new images...')
         model.eval()
         with torch.no_grad():
             x = torch.randn((n, 3, self.img_size, self.img_size), device=self.device)
             for i in tqdm(reversed(range(1, self.noise_steps)), position=0):
                 t = (torch.ones(n)*i).long().to(self.device)
-                predicted_noise = model(x, t)
+                predicted_noise = model(x, t, labels)
+                if cgf_scale > 0:
+                    unconditional_predicted_noise = model(x, t, None)
+                    predicted_noise = torch.lerp(unconditional_predicted_noise, predicted_noise, cgf_scale)
+
                 alpha = self.alpha[i][:, None, None, None]
                 alpha_hat = self.alpha_hat[i][:, None, None, None]
                 beta = self.beta[i][:, None, None, None]
@@ -66,7 +71,7 @@ def train(args):
     setup_logging(args.run_name)
     device = torch.device(args.device)
     dataloader = get_data(args)
-    model = UNet().to(device)
+    model = UNet(num_classes=args.num_classes).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
     mse = nn.MSELoss()
     diffusion = Diffusion(img_size=args.image_size, device=device)
@@ -76,11 +81,14 @@ def train(args):
     for epoch in range(args.epochs):
         logging.info(f'Epoch {epoch+1}/{args.epochs}')
         pbar = tqdm(dataloader, position=0)
-        for i, (images, _) in enumerate(pbar):
+        for i, (images, labels) in enumerate(pbar):
             images = images.to(device)
+            labels = labels.to(device)
             t = diffusion.sample_timesteps(images.shape[0]).to(device)
             x_t, noise = diffusion.noise_images(images, t)
-            predicted_noise = model(x_t, t)
+            if np.random.rand() < 0.1:
+                labels = None
+            predicted_noise = model(x_t, t, labels)
             loss = mse(noise, predicted_noise)
             
             optimizer.zero_grad()

@@ -89,8 +89,8 @@ class SelfAttention(nn.Module):
         return attention_value.swapaxes(2, 1).view(-1, self.channels, self.size, self.size)
         
                 
-class UNet(nn.module):
-    def __init__(self, c_in=3, c_out=3, time_dim=256, device='cuda'):
+class UNet_conditional(nn.module):
+    def __init__(self, c_in=3, c_out=3, time_dim=256, num_classes=10, device='cuda'):
         self.device = device
         self.time_dim = time_dim
         
@@ -114,6 +114,8 @@ class UNet(nn.module):
         self.sa6 = SelfAttention(64, 64)
         self.outc = nn.Conv2d(64, c_out, kernel_size=1)
         
+        if num_classes is not None:
+            self.label_embedding = nn.Embedding(num_classes, time_dim)
          
     def pos_encoding(self, t, channels):
         inv_freq = 1.0 / (10000 ** (torch.arange(0.0, channels, 2.0, device=self.device) / channels))
@@ -122,9 +124,13 @@ class UNet(nn.module):
         pos_enc = torch.cat([pos_enc_a, pos_enc_b], dim=-1)
         return pos_enc
     
-    def forward(self, x, t):
+    def forward(self, x, t, y):
         t = t.unsqueeze(-1).type(torch.float)
         t = self.pos_encoding(t, self.time_dim)
+        
+        if y is not None:
+            y = self.label_embedding(y)
+            t = t + y
         
         x1 = self.inc1(x)
         x2 = self.down1(x1)
